@@ -9,6 +9,10 @@
 
 #include <iostream>
 #include <map>
+#include <vector>
+#include <string>
+
+//======== GM ========================================================== 80 ====
 
 /**
  * Parses a single line of text into the "key" part and the "value" part. The
@@ -25,7 +29,7 @@
  * 
  * @param parse_map: std::map<std::string, 
                                         std::vector<std::string>* >* 
-                     => map containing parsed lined.
+                     => map containing parsed lines.
 
    @note: parse_map is mutated. 
 */
@@ -33,10 +37,31 @@ void parse(const std::string& line,
            std::map<std::string, std::vector<std::string>*, 
            std::less<std::string> >* parse_map);
 
+/**
+ * Reduces a map containing { key, vector<int> } to { key, int }. The reduction
+ * is a max_element on the vector.
+ * 
+ * @param parse_map: std::map<std::string, std::vector<std::string>*, 
+                              std::less<std::string>>* 
+                     => map containing parsed lines.
+
+   @returns reduced parsed_map to a single max integer. 
+*/
 std::map<std::string, std::string>
 reduce(std::map<std::string, std::vector<std::string>*, 
        std::less<std::string>>* parse_map); 
 
+/**
+ * Cout operator overload for a resulting map. 
+ * 
+ * @param map: std::ostream& oss, std::map<std::string, std::string, 
+                                           std::less<std::string>>
+               => resulting map to be written to stdout. 
+ * 
+ * @returns ostream. 
+*/
 std::ostream& operator<<(std::ostream& oss, 
                          std::map<std::string, std::string, 
                                   std::less<std::string>> map); 
+
+//======== GM ========================================================== 80 ====                                  

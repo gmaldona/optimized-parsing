@@ -7,21 +7,16 @@
 * date  : 2024-02-14
 */
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <iostream> 
 #include <algorithm>
 #include <fstream>
-#include <string>
 #include <regex>
-#include <vector>
-#include <map>
 
 #include "standard.hpp"
 
 using namespace std;
 
 //======== GM ========================================================== 80 ====
+
 std::ostream& operator<<(std::ostream& oss, 
                          std::map<std::string, std::string, 
                                   std::less<std::string>> map) {
@@ -38,6 +33,8 @@ void parse(const std::string& line,
    const size_t  end   = line.rfind("\"") - 1; 
    const string  key   = line.substr(start + 1, end - start); 
    const string substr = line.substr(end+1);
+
+   // TODO: Error catching for incorrect parses. 
 
    regex  intexpr("[0-9]+"); 
    smatch match;
@@ -107,3 +104,4 @@ int main(int args, char** argv) {
    return 0;
 }
 
+//======== GM ========================================================== 80 ====
