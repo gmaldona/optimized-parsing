@@ -22,7 +22,6 @@
 using namespace std;
 
 //======== GM ========================================================== 80 ====
-
 std::ostream& operator<<(std::ostream& oss, 
                          std::map<std::string, std::string, 
                                   std::less<std::string>> map) {
@@ -85,15 +84,22 @@ int main(int args, char** argv) {
 
    auto* parse_map = new map<string, vector<string> *, less<string>>{}; 
    string line;  
-   ifstream file (argv[1]);
-   while (getline(file, line)) {
+   ifstream input (argv[1]);
+   while (getline(input, line)) {
       parse(line, parse_map); 
    }
 
    auto results = reduce(parse_map); 
    cout << results;
+   
+   ofstream output (string(argv[1]).append("-results"));
+   for (auto& [key, value] : results) {
+      output << "\"" << key << "\" " << value << endl;
+   }
+   output.close();
 
-   for (auto& [_, value] : *parse_map) {
+
+   for (auto& [key, value] : *parse_map) {
       delete value;
    }
 
