@@ -5,6 +5,8 @@
 # email : gmaldonado@cs.binghamton.edu
 # date  : 2024-02-14
 
+# //======== GM ======================================================== 80 ====
+
 CC     = g++
 CFLAGS = -std=c++17 -Wall -Wextra -pedantic -g -O
 TARGET = 1brc
@@ -35,3 +37,5 @@ standard: .standard
 .PHONY: clean
 clean:
 	$(RM) -r build
+
+# //======== GM ======================================================== 80 ====

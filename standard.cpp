@@ -63,7 +63,7 @@ reduce(std::map<std::string, std::vector<std::string>*,
          mapped.push_back(value);
       }
 
-      results.insert( {
+      results.insert({
           key, 
           to_string(*max_element(mapped.begin(), mapped.end())) 
       });
@@ -75,7 +75,7 @@ reduce(std::map<std::string, std::vector<std::string>*,
 int main(int args, char** argv) {
    
    if (args == 1) {
-      printf("No file input.\n");
+      cout << "No file input." << endl;
       return 1;
    }
 
