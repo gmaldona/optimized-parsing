@@ -15,28 +15,33 @@
 #include <string>
 #include <regex>
 #include <vector>
-#include <unordered_map>
+#include <map>
 
 #include "standard.hpp"
 
 using namespace std;
 
+//======== GM ========================================================== 80 ====
+
 std::ostream& operator<<(std::ostream& oss, 
-                         std::unordered_map<std::string, std::string> map) {
+                         std::map<std::string, std::string, 
+                                  std::less<std::string>> map) {
    for (auto& [key, value] : map) {
-      oss << key << " " << value << endl;
+      oss << "\"" << key << "\" " << value << endl;
    }
    return oss;
 }
 
-void parse(const string& line, unordered_map<string, vector<string>* >* parse_map) {
+void parse(const std::string& line, 
+           std::map<std::string, std::vector<std::string>*, 
+           std::less<std::string> >* parse_map) {
    const size_t  start = line.find("\""); 
-   const size_t  end   = line.rfind("\""); 
-   const string  key   = line.substr(start + 1, end); 
-   const string substr = line.substr(end);
+   const size_t  end   = line.rfind("\"") - 1; 
+   const string  key   = line.substr(start + 1, end - start); 
+   const string substr = line.substr(end+1);
 
    regex  intexpr("[0-9]+"); 
-   smatch match; 
+   smatch match;
 
    string value; 
    if (regex_search(substr, match, intexpr) ) {
@@ -50,15 +55,15 @@ void parse(const string& line, unordered_map<string, vector<string>* >* parse_ma
    }
 }
 
-unordered_map<string, string>
-reduce(unordered_map<string, vector<string>* >* parse_map) {
-   std::unordered_map<std::string, std::string> results {}; 
+std::map<std::string, std::string>
+reduce(std::map<std::string, std::vector<std::string>*, 
+       std::less<std::string>>* parse_map) {
+   std::map<std::string, std::string> results {}; 
 
    for (auto& [key, vec] : *parse_map) {
       vector<int> mapped {};
       for (auto& strval : *vec) {
          const int value = atoi(strval.c_str());
-         cout << value << endl;
          mapped.push_back(value);
       }
 
@@ -78,7 +83,7 @@ int main(int args, char** argv) {
       return 1;
    }
 
-   auto* parse_map = new unordered_map<string, vector<string> *>{}; 
+   auto* parse_map = new map<string, vector<string> *, less<string>>{}; 
    string line;  
    ifstream file (argv[1]);
    while (getline(file, line)) {
@@ -86,12 +91,13 @@ int main(int args, char** argv) {
    }
 
    auto results = reduce(parse_map); 
-   // cout << results;
+   cout << results;
 
    for (auto& [_, value] : *parse_map) {
       delete value;
    }
 
-   // delete parse_map;
+   delete parse_map;
    return 0;
 }
+

@@ -1,4 +1,6 @@
 # MacOS generated directory
-**/optimized.dSYM/
+**/*.dSYM/
 
 build/
+
+a.out
