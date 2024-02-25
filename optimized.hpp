@@ -31,7 +31,6 @@ class parser {
     ESCAPED,      // S_2 (3)
     END_STR,      // S_3 (4)
     INT,          // S_4 (5)
-    END,          // S_5 (6)
   }; 
 
   enum ASCII {
@@ -42,7 +41,7 @@ class parser {
   };
 
 private:
-  static const size_t STATES = 7;
+  static const size_t STATES = 6;
   static const size_t ACCEPTABLE = 94; 
 
   parser::state s = parser::state::START;
@@ -50,7 +49,9 @@ private:
 
   size_t line = 1; 
 
-  char prev_char = '^'; 
+  char prev_char  = '^'; 
+  int  prev_state = 1; 
+  int  index      = 0; 
 
 public:
   parser(); 
