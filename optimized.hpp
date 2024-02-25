@@ -9,11 +9,13 @@
 
 #include <sys/stat.h>
 #include <iostream>
+#include <stdlib.h>
+#include <string.h>
 
 class mapped_file {
 public: 
   struct stat fileInfo;
-  char *map;
+  char *content;
   ~mapped_file();
 };
 
@@ -23,38 +25,23 @@ public:
 class parser {
 
   enum state {
-    KEY,
-    ESCAPED,
-    VALUE,
     REJECT,
+    START,        // S_0
+    STR,          // S_1
+    ESCAPED,      // S_2
+    END_STR,      // S_3
+    INT,          // S_4
+    END,          // S_5
   }; 
 
-  enum transition {
-    EPSILON, // white space state
-    ESCAPE,
-    ALPHA, 
-    NUMERAL
-  };
-
-  class parse_exception : public std::exception {
-
-    private: 
-      size_t line; 
-
-    public:
-    parse_exception(size_t line) : line(line) {}
-
-    virtual const char * what() {
-      return ("Parse Exception on line" + std::to_string(line)).c_str();
-    }
-  };
-
 private:
-  static const size_t STATES = 4;
-  static const size_t ACCEPTABLE = 95; 
+  static const size_t STATES = 7;
+  static const size_t ACCEPTABLE = 94; 
 
   parser::state s;
   parser::state transition_table[STATES][ACCEPTABLE];
+
+  size_t line = 0; 
 
 public:
   parser(); 
@@ -67,10 +54,7 @@ public:
     return this->s;
   }
 
-  void accept(std::string in);
-
-  std::string consume(std::string in);
-
+  void accept(mapped_file* file);
 };
 
 /**
@@ -84,3 +68,7 @@ public:
  * @returns: a pointer to the file contents.
 */
 mapped_file* map_file2mem(const char* path);
+
+size_t c2i(char c) {
+  return (size_t) c - 32;
+}
