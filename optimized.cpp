@@ -26,20 +26,19 @@ parser::parser() {
     memset(transition_table[i], parser::state::REJECT, ACCEPTABLE); 
 
     if (i == parser::state::STR) {
-
-      for (size_t b = 0x32; b <= 0x126; b++) {
-        transition_table[parser::state::STR][c2i(b)] = parser::state::STR;
+      for (char c = parser::ASCII::MIN; c <= parser::ASCII::MAX; ++c) {
+        transition_table[parser::state::STR][c2i(c)] = parser::state::STR;
       }
     }
-    if (i == parser::state::INT || i == parser::state::END_STR) {
-      for (size_t b = 0x48; b <= 0x57; ++b) {
-        transition_table[i][c2i(b)] = parser::state::INT; 
+    else if (i == parser::state::END_STR || i == parser::state::INT) {
+      for (char c = parser::ASCII::IMIN; c <= parser::ASCII::IMAX; ++c) {
+        transition_table[i][c2i(c)] = parser::state::INT; 
       }
     }
   }
 
   transition_table[parser::state::START][c2i(' ')]  = parser::state::START;
-  transition_table[parser::state::START][c2i('"')]  = parser::state::START;
+  transition_table[parser::state::START][c2i('"')]  = parser::state::STR;
   
   transition_table[parser::state::STR][c2i('\\')] = parser::state::ESCAPED;
   transition_table[parser::state::STR][c2i('"')]  = parser::state::END_STR;
@@ -50,13 +49,14 @@ parser::parser() {
 
   transition_table[parser::state::END_STR][c2i(' ')] = parser::state::END_STR; 
 
-  transition_table[parser::state::INT][c2i('\n')] = parser::state::END;
+  transition_table[parser::state::INT][c2i(' ')] = parser::state::END;
 }
 
 void parser::accept(mapped_file* file) {
   char* chars = file->content; 
   for (off_t i = 0; i <= file->fileInfo.st_size; ++i) {
     char c = chars[i]; 
+    cout << c << ", " << this->cur_state() << endl;
     switch (this->cur_state()) {
       case parser::state::START:
         this->set_state(transition_table[parser::state::START][c2i(c)]); 
@@ -71,20 +71,33 @@ void parser::accept(mapped_file* file) {
         this->set_state(transition_table[parser::state::END_STR][c2i(c)]);
         break;
       case parser::state::INT:
-        this->set_state(transition_table[parser::state::INT][c2i(c)]);  
+        if (c == '\n') { // c2i(x) => x - 32. NL is 0x10, 0x10 - 32 == ??? 
+          this->set_state(parser::state::END);
+        } else {
+          this->set_state(transition_table[parser::state::INT][c2i(c)]);  
+        }
         break;
       case parser::state::END:
-
+        this->set_state(parser::state::START);
         ++this->line;
         break;
       case parser::state::REJECT: 
         printf("Failed to parse. Parse Exception on line %zu.\n", this->line);
+        printf("prev_char='%c', failed to parse '%c' in state: %d\n", 
+               this->prev_char,
+               c,
+               this->cur_state()); 
         exit(1);
 
       default: 
         this->set_state(parser::state::REJECT);
-
     } 
+
+    if (this->cur_state() == parser::state::START) {
+      this->prev_char = '^';
+    } else {
+      this->prev_char = c; 
+    }  
   }
 }
 

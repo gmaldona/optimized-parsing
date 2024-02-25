@@ -25,23 +25,32 @@ public:
 class parser {
 
   enum state {
-    REJECT,
-    START,        // S_0
-    STR,          // S_1
-    ESCAPED,      // S_2
-    END_STR,      // S_3
-    INT,          // S_4
-    END,          // S_5
+    REJECT,       //     (0)
+    START,        // S_0 (1)
+    STR,          // S_1 (2)
+    ESCAPED,      // S_2 (3)
+    END_STR,      // S_3 (4)
+    INT,          // S_4 (5)
+    END,          // S_5 (6)
   }; 
+
+  enum ASCII {
+     MIN = 32,
+     MAX = 126,
+    IMIN = 48,
+    IMAX = 57
+  };
 
 private:
   static const size_t STATES = 7;
   static const size_t ACCEPTABLE = 94; 
 
-  parser::state s;
+  parser::state s = parser::state::START;
   parser::state transition_table[STATES][ACCEPTABLE];
 
-  size_t line = 0; 
+  size_t line = 1; 
+
+  char prev_char = '^'; 
 
 public:
   parser(); 
