@@ -5,7 +5,7 @@
 # email : gmaldonado@cs.binghamton.edu
 # date  : 2024-02-14
 
-# //======== GM ======================================================== 80 ====
+#=========== GM ======================================================== 80 ====
 
 CC     = g++
 CFLAGS = -std=c++17 -Wall -Wextra -pedantic -g -O
@@ -14,28 +14,24 @@ TARGET = 1brc
 .pre:
 	mkdir -p build
 
+all: optimized standard
+
 .PHONY: optimized
-optimized: .optimized
-	$(RM) optimized.o
-
-.PHONY: standard
-standard: .standard
-	$(RM) standard.o
-
-.optimized: optimized.o
+optimized: optimized.o
 	$(CC) $(CFLAGS) -o build/optimized optimized.cpp
 
-.optimized.o: .pre optimized.cpp optimized.hpp
+optimized.o: .pre optimized.cpp optimized.hpp
 	$(CC) $(CFLAGS) -c optimized.cpp
 
-.standard: standard.o
+.PHONY: standard
+standard: standard.o
 	$(CC) $(CFLAGS) -o build/standard standard.cpp
 
-.standard.o: .pre standard.cpp standard.hpp
+standard.o: .pre standard.cpp standard.hpp
 	$(CC) $(CFLAGS) -c standard.cpp
 
 .PHONY: clean
 clean:
 	$(RM) -r build
 
-# //======== GM ======================================================== 80 ====
+#=========== GM ======================================================== 80 ====
