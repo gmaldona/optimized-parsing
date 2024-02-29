@@ -19,22 +19,6 @@ public:
   ~mapped_file();
 };
 
-class parse_trie {
-
-private:
-  const static int MAX_NODES = 10'000;
-  const static int MAX_LEN   = 20 + 1;
-  static int NEXT; 
-
-  // [node_i][(int)char] = node_i+1
-  // The first [0 - ACCEPTABLE-1] is reserverd
-  int trie[MAX_NODES*MAX_LEN][parser::ACCEPTABLE]; 
-
-public:
-  parse_trie();
-  void insert(char* key, char* value, size_t keylen);
-};
-
 class parser {
   /**    
    * STATE MACHINE: 
@@ -69,7 +53,7 @@ class parser {
 public:
   static const size_t STATES = 6;
   static const size_t ACCEPTABLE = 94; 
-  static const size_t STRLEN = 20; 
+  static const size_t STRLEN = 20 + 1; 
 
   parser(); 
 
@@ -94,6 +78,22 @@ private:
   int  index      = 0; 
 };
 
+class parse_trie {
+
+private:
+  const static int MAX_NODES = 10'000;
+  const static int MAX_LEN   = 20 + 1;
+  int NEXT = 0; 
+
+  // [node_i][(int)char] = node_i+1
+  // The first [0 - ACCEPTABLE-1] is reserverd
+  int trie[MAX_NODES*MAX_LEN][parser::ACCEPTABLE]{};
+
+public:
+  parse_trie();
+  void insert(char* key, char* value);
+};
+
 /**
  * Borrowed from Gregory Maldonado's GitHub Repository:
  * https://github.com/bu-cs447-2024-1s/one-billion-row-challenge-gmaldona
@@ -116,7 +116,7 @@ mapped_file* map_file2mem(const char* path);
  * @returns int 
  */
 inline int StoI(const char *p) {
-    int x = 0; int isNeg = 0;
+    int x = 0;
     while (*p >= '0' && *p <= '9') {
         x = (x*10) + (*p - '0');
         ++p;

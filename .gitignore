@@ -2,5 +2,7 @@
 **/*.dSYM/
 
 build/
+.idea/
+.vscode/
 
 a.out
