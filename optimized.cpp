@@ -50,12 +50,15 @@ parser::parser() {
 
   transition_table[parser::state::START][c2i(' ')]  = parser::state::START;
   transition_table[parser::state::START][c2i('\n')] = parser::state::START;
+  transition_table[parser::state::START][c2i('\n')] = parser::state::START;
   transition_table[parser::state::START][c2i('"')]  = parser::state::STR;
   
   transition_table[parser::state::STR][c2i('\\')] = parser::state::ESCAPED;
   transition_table[parser::state::ESCAPED][c2i('\\')] = parser::state::STR;
   transition_table[parser::state::ESCAPED][c2i('"')]  = parser::state::STR;
   transition_table[parser::state::ESCAPED][c2i('.')]  = parser::state::STR;
+
+  transition_table[parser::state::STR][c2i('"')]  = parser::state::END_STR;
 
   transition_table[parser::state::STR][c2i('"')]  = parser::state::END_STR;
 
@@ -106,8 +109,11 @@ void parser::accept(mapped_file* file) {
       case parser::state::REJECT: 
         printf("Failed to parse. Parse Exception on line %zu.\n", this->line);
         printf("prev_char='%c', failed on '%c' in state: %d at index=%d.\n", 
+        printf("prev_char='%c', failed on '%c' in state: %d at index=%d.\n", 
                this->prev_char,
                c,
+               this->prev_state,
+               this->index); 
                this->prev_state,
                this->index); 
         exit(1);
@@ -158,6 +164,7 @@ int main(int args, char** argv) {
     return 1;
   }
 
+  auto file = map_file2mem(argv[1]);
   auto file = map_file2mem(argv[1]);
   
   parser p; 
