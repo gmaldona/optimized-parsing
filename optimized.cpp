@@ -73,6 +73,8 @@ void parser::accept(mapped_file* file) {
   char* chars = file->content; 
   char key_str[parser::STRLEN];
   char value_str[parser::STRLEN];
+  memset(key_str, 0, parser::STRLEN);
+  memset(value_str, 0, parser::STRLEN);
   size_t char_p = 0;
   size_t val_p  = 0;
   
@@ -100,7 +102,6 @@ void parser::accept(mapped_file* file) {
 		  val_p++;
 		}
         this->set_state(transition_table[parser::state::END_STR][c2i(c)]);
-        char_p = 0;
         break;
       case parser::state::INT:
         // c2i(x) => x - 32. NL is 0x10, 0x10 - 32 == ??? 
@@ -115,7 +116,8 @@ void parser::accept(mapped_file* file) {
 		  char_p = 0;
 		  val_p = 0;
 
-		  memset(value_str, 0, sizeof (value_str));
+		  memset(key_str, 0, sizeof(key_str));
+		  memset(value_str, 0, sizeof(value_str));
 
         } else {
           value_str[val_p] = c;
