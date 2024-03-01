@@ -5,6 +5,16 @@
 * author: Gregory Maldonado
 * email : gmaldonado@cs.binghamton.edu
 * date  : 2024-02-14
+*
+* Copyright 2024 GREGORY MALDONADO
+*
+* THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+* AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+* SOFTWARE.
 */
 
 #include <sys/stat.h>
@@ -12,6 +22,13 @@
 #include <stdlib.h>
 #include <string.h>
 
+//======== GM ========================================================== 80 ====
+
+/*
+ * Borrowed from Gregory Maldonado's GitHub Repository:
+ * https://github.com/bu-cs447-2024-1s/one-billion-row-challenge-gmaldona
+ * Representation for a mmap()'d file.
+ */
 class mapped_file {
 public: 
   struct stat fileInfo;
@@ -19,6 +36,12 @@ public:
   ~mapped_file();
 };
 
+//======== GM ========================================================== 80 ====
+
+/**
+ * Parser for Strings and Integers. The Parser using a State Machine to parse,
+ * see below.
+ */
 class parser {
   /**    
    * STATE MACHINE: 
@@ -43,17 +66,21 @@ class parser {
     INT,          // S_4 (5)
   }; 
 
+  /**
+   * ASCII Bounds for Integers and Printable Characters.
+   */
   enum ASCII {
-     MIN = 32,
-     MAX = 126,
-    IMIN = 48,
-    IMAX = 57
+     MIN = 32,  // min printable character.
+     MAX = 126, // max printable character.
+    IMIN = 48,  // min printable integer.
+    IMAX = 57   // max printable integer.
   };
 
 public:
-  static const size_t STATES = 6;
-  static const size_t ACCEPTABLE = 94; 
-  static const size_t STRLEN = 20 + 1; 
+  // total number of states.
+  static const size_t STATES = 6; // A Java reflection would be nice here hmm...
+  static const size_t ACCEPTABLE = ASCII::MAX - ASCII::MIN; // printable chars
+  static const size_t STRLEN = 20 + 1; // requirement: strlen is 20 + 1 byte \0
 
   parser(); 
 
@@ -65,6 +92,12 @@ public:
     return this->s;
   }
 
+  /**
+   * parsed character by character within the mmap'd file and uses a state
+   * machine to parse and trie for storing parsed characters.
+   * Prints the trie in the required format at the end of the function.
+   * @param file a mmap'd file
+   */
   void accept(mapped_file* file);
 
 private:
@@ -78,22 +111,33 @@ private:
   int  index      = 0; 
 };
 
+//======== GM ========================================================== 80 ====
+
 class parse_trie {
 
 private:
-  const static int MAX_NODES = 10'000;
+  // considering the first index [0] to be a dead node.
+  // if [0] then nothing found.
+  const static int MAX_NODES = 10'001;
   const static int MAX_LEN   = 20 + 1;
   int NEXT = parser::ACCEPTABLE;
 
   // [node_i][(int)char] = node_i+1
-  // The first [0 - ACCEPTABLE-1] is reserverd
+  // The first [1 - ACCEPTABLE] is reserverd
   int** trie;
 
 public:
   parse_trie();
+  /**
+   * Inserts a key and value into the parse_trie
+   * @param key: str
+   * @param value: int
+   */
   void insert(char* key, char* value);
   ~parse_trie();
 };
+
+//======== GM ========================================================== 80 ====
 
 /**
  * Borrowed from Gregory Maldonado's GitHub Repository:
@@ -113,7 +157,7 @@ mapped_file* map_file2mem(const char* path);
  * 2008e90c7fe94a4d9515d09f94c597690e7a7e13/1brc.cpp#L49
  * Fixed Point String to Integer conversion.
  * 
- * @param p: const char* p => string represnetation of an integer.
+ * @param p: const char* => string represnetation of an integer.
  * @returns int 
  */
 inline int StoI(const char *p) {
@@ -125,7 +169,11 @@ inline int StoI(const char *p) {
     return x;
 }
 
-
+/**
+ * @param c: char
+ * @return the integer representation of @param c but with the offset required
+ * for the parser.
+ */
 inline size_t c2i(char c) {
   return (size_t) c - ' ';
 }

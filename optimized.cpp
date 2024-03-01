@@ -5,6 +5,16 @@
 * author: Gregory Maldonado
 * email : gmaldonado@cs.binghamton.edu
 * date  : 2024-02-14
+*
+* Copyright 2024 GREGORY MALDONADO
+*
+* THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+* AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+* SOFTWARE.
 */
 
 #include <sys/mman.h>
@@ -19,7 +29,7 @@
 
 parse_trie::parse_trie() {
   // the value of a node can store a signed integer.
-  NEXT = parser::ACCEPTABLE;
+  NEXT = parser::ACCEPTABLE+1;
   trie = new int*[MAX_NODES*MAX_LEN];
 
   for (size_t i = 0; i < MAX_NODES*MAX_LEN; i++) {
@@ -29,7 +39,7 @@ parse_trie::parse_trie() {
 }
 
 void parse_trie::insert(char* key, char* value) {
-  size_t next = 0;
+  size_t next = 1;
 
   for (size_t i = 0; key[i] != '\0'; i++) {
     trie[next][c2i(key[i])] = NEXT;
@@ -160,6 +170,10 @@ void parser::accept(mapped_file* file) {
       this->prev_char = c; 
     } 
     ++this->index;
+  }
+
+  for (size_t i = 1; i <= ACCEPTABLE) {
+
   }
 }
 
