@@ -86,12 +86,14 @@ void parser::accept(mapped_file* file) {
         this->set_state(transition_table[parser::state::START][c2i(c)]); 
         break;
       case parser::state::STR:
-        key_str[char_p] = c;
-        char_p++;
+		if (c != '\"' || this->prev_state == parser::state::ESCAPED) {
+		  key_str[char_p] = c;
+		  char_p++;
+		}
         this->set_state(transition_table[parser::state::STR][c2i(c)]);
         break;
       case parser::state::ESCAPED:
-        key_str[char_p] = '\\';
+        key_str[char_p] = c;
         char_p++;
         this->set_state(transition_table[parser::state::ESCAPED][c2i(c)]);
         break;
