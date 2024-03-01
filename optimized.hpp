@@ -83,15 +83,16 @@ class parse_trie {
 private:
   const static int MAX_NODES = 10'000;
   const static int MAX_LEN   = 20 + 1;
-  int NEXT = 0; 
+  int NEXT = parser::ACCEPTABLE;
 
   // [node_i][(int)char] = node_i+1
   // The first [0 - ACCEPTABLE-1] is reserverd
-  int trie[MAX_NODES*MAX_LEN][parser::ACCEPTABLE]{};
+  int** trie;
 
 public:
   parse_trie();
   void insert(char* key, char* value);
+  ~parse_trie();
 };
 
 /**

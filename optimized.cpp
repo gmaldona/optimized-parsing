@@ -19,20 +19,33 @@
 
 parse_trie::parse_trie() {
   // the value of a node can store a signed integer.
-  NEXT = parser::ACCEPTABLE; 
+  NEXT = parser::ACCEPTABLE;
+  trie = new int*[MAX_NODES*MAX_LEN];
+
+  for (size_t i = 0; i < MAX_NODES*MAX_LEN; i++) {
+	trie[i] = new int[parser::ACCEPTABLE];
+	memset(trie[i], 0, parser::ACCEPTABLE);
+  }
 }
 
 void parse_trie::insert(char* key, char* value) {
   size_t next = 0;
-  std::cout << key << std::endl;
 
-//  for (size_t i = 0; key[i] != '\0'; ++i) {
-//
-//    trie[next][c2i(key[i])] = NEXT;
-//    next = NEXT; NEXT++;
-//  }
-//
-//  trie[next][0] = StoI(value);
+  for (size_t i = 0; key[i] != '\0'; i++) {
+    trie[next][c2i(key[i])] = NEXT;
+    next = NEXT; NEXT++;
+  }
+  int v = StoI(value);
+  if (v > trie[next][0]) {
+	trie[next][0] = v;
+  }
+}
+
+parse_trie::~parse_trie() {
+  for (size_t i = 0; i < MAX_NODES*MAX_LEN; i++) {
+	delete [] trie[i];
+  }
+  delete [] trie;
 }
 
 //======== GM ========================================================== 80 ====
@@ -69,7 +82,7 @@ parser::parser() {
 
 void parser::accept(mapped_file* file) {
 
-  parse_trie trie; 
+  parse_trie trie;
   char* chars = file->content; 
   char key_str[parser::STRLEN];
   char value_str[parser::STRLEN];
@@ -109,7 +122,7 @@ void parser::accept(mapped_file* file) {
         // c2i(x) => x - 32. NL is 0x10, 0x10 - 32 == ??? 
         if (c == '\n' || c == ' ' || c == '\t') {
           value_str[val_p] = '\0';
-//		  trie.insert(key_str, value_str);
+		  trie.insert(key_str, value_str);
 
           this->set_state(parser::state::START);
 		  ++this->line; this->index = 0;
