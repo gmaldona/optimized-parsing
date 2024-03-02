@@ -17,10 +17,16 @@
 * SOFTWARE.
 */
 
+//======== GM ========================================================== 80 ====
+
 #include <sys/stat.h>
+#include <sys/mman.h>
+
 #include <iostream>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdlib>
+#include <cstdio>
+#include <fcntl.h>
+#include <cstring>
 
 //======== GM ========================================================== 80 ====
 
@@ -30,10 +36,11 @@
  * Representation for a mmap()'d file.
  */
 class mapped_file {
-public: 
-  struct stat fileInfo;
-  char *content;
-  ~mapped_file();
+public:
+    struct stat fileInfo;
+    char *content;
+
+    ~mapped_file();
 };
 
 //======== GM ========================================================== 80 ====
@@ -43,72 +50,72 @@ public:
  * see below.
  */
 class parser {
-  /**    
-   * STATE MACHINE: 
-   * This state machine captures a string wrapped within quotations and a value
-   * that consists of integers. 
-   * 
-   *      *[e]       *[ALPHA]       *[e]            *[0-9]
-   *     (S_0) --"--> (S_1) --"--> (S_3) --[0-9]--> (S_4) --$--> END
-   *                   |  ^\ 
-   *                  (\)   (\ | " | .)
-   *                   V     \ 
-   *                 (S_2) ---\
-   * 
-   *  *[A] := State (S) does a transition [A] to state (S)
-  */
-  enum state {
-    REJECT,       //     (0)
-    START,        // S_0 (1)
-    STR,          // S_1 (2)
-    ESCAPED,      // S_2 (3)
-    END_STR,      // S_3 (4)
-    INT,          // S_4 (5)
-  }; 
+    /**
+     * STATE MACHINE:
+     * This state machine captures a string wrapped within quotations and a value
+     * that consists of integers.
+     *
+     *      *[e]       *[ALPHA]       *[e]            *[0-9]
+     *     (S_0) --"--> (S_1) --"--> (S_3) --[0-9]--> (S_4) --$--> END
+     *                   |  ^\
+     *                  (\)   (\ | " | .)
+     *                   V     \
+     *                 (S_2) ---\
+     *
+     *  *[A] := State (S) does a transition [A] to state (S)
+    */
+    enum state {
+        REJECT,       //     (0)
+        START,        // S_0 (1)
+        STR,          // S_1 (2)
+        ESCAPED,      // S_2 (3)
+        END_STR,      // S_3 (4)
+        INT,          // S_4 (5)
+    };
 
-  /**
-   * ASCII Bounds for Integers and Printable Characters.
-   */
-  enum ASCII {
-     MIN = 32,  // min printable character.
-     MAX = 126, // max printable character.
-    IMIN = 48,  // min printable integer.
-    IMAX = 57   // max printable integer.
-  };
+    /**
+     * ASCII Bounds for Integers and Printable Characters.
+     */
+    enum ASCII {
+        MIN = 32,  // min printable character.
+        MAX = 126, // max printable character.
+        IMIN = 48,  // min printable integer.
+        IMAX = 57   // max printable integer.
+    };
 
 public:
-  // total number of states.
-  static const size_t STATES = 6; // A Java reflection would be nice here hmm...
-  static const size_t ACCEPTABLE = ASCII::MAX - ASCII::MIN; // printable chars
-  static const size_t STRLEN = 20 + 1; // requirement: strlen is 20 + 1 byte \0
+    // total number of states.
+    static const size_t STATES = 6; // A Java reflection would be nice here hmm...
+    static const size_t ACCEPTABLE = ASCII::MAX - ASCII::MIN; // printable chars
+    static const size_t STRLEN = 20 + 1; // requirement: strlen is 20 + 1 byte \0
 
-  parser(); 
+    parser();
 
-  void set_state(parser::state s) {
-    this->s = s;
-  }
+    void set_state(parser::state s) {
+        this->s = s;
+    }
 
-  parser::state cur_state() {
-    return this->s;
-  }
+    parser::state cur_state() {
+        return this->s;
+    }
 
-  /**
-   * parsed character by character within the mmap'd file and uses a state
-   * machine to parse and trie for storing parsed characters.
-   * Prints the trie in the required format at the end of the function.
-   * @param file a mmap'd file
-   */
-  void accept(mapped_file* file);
+    /**
+     * parsed character by character within the mmap'd file and uses a state
+     * machine to parse and trie for storing parsed characters.
+     * Prints the trie in the required format at the end of the function.
+     * @param file a mmap'd file
+     */
+    void accept(mapped_file *file);
 
 private:
-  parser::state s = parser::state::START;
-  parser::state transition_table[STATES][ACCEPTABLE];
+    parser::state s = parser::state::START;
+    parser::state transition_table[STATES][ACCEPTABLE];
 
-  size_t line = 1; 
+    size_t line = 1;
 
-  char prev_char  = '^'; 
-  int  prev_state = 1; 
-  int  index      = 0; 
+    char prev_char = '^';
+    int prev_state = 1;
+    int index = 0;
 };
 
 //======== GM ========================================================== 80 ====
@@ -116,25 +123,34 @@ private:
 class parse_trie {
 
 private:
-  // considering the first index [0] to be a dead node.
-  // if [0] then nothing found.
-  const static int MAX_NODES = 10'001;
-  const static int MAX_LEN   = 20 + 1;
-  int NEXT = parser::ACCEPTABLE;
+    // considering the first index [0] to be a dead node.
+    // if [0] then nothing found.
 
-  // [node_i][(int)char] = node_i+1
-  // The first [1 - ACCEPTABLE] is reserverd
-  int** trie;
+    const static int MAX_LEN = 20 + 1;
+    const static int MAX_NODES = (10'000 + 1) * MAX_LEN;
+    int NEXT = parser::ACCEPTABLE;
+
 
 public:
-  parse_trie();
-  /**
-   * Inserts a key and value into the parse_trie
-   * @param key: str
-   * @param value: int
-   */
-  void insert(char* key, char* value);
-  ~parse_trie();
+    struct node {
+        int next = -1;
+        bool stored = false;
+        char *key;
+        int value = INT64_MIN;
+    };
+
+    parse_trie();
+
+    node **trie;
+
+    /**
+     * Inserts a key and value into the parse_trie
+     * @param key: str
+     * @param value: int
+     */
+    void insert(char *key, char *value);
+
+    ~parse_trie();
 };
 
 //======== GM ========================================================== 80 ====
@@ -149,7 +165,7 @@ public:
  * @param path: const char* path =>  string representation of a path to a file.
  * @returns: a pointer to the file contents.
 */
-mapped_file* map_file2mem(const char* path);
+mapped_file *map_file2mem(const char *path);
 
 /**
  * Borrowed from Gregory Maldonado's GitHub Repository:
@@ -163,7 +179,7 @@ mapped_file* map_file2mem(const char* path);
 inline int StoI(const char *p) {
     int x = 0;
     while (*p >= '0' && *p <= '9') {
-        x = (x*10) + (*p - '0');
+        x = (x * 10) + (*p - '0');
         ++p;
     }
     return x;
@@ -175,5 +191,5 @@ inline int StoI(const char *p) {
  * for the parser.
  */
 inline size_t c2i(char c) {
-  return (size_t) c - ' ';
+    return (size_t) c - ' ';
 }
