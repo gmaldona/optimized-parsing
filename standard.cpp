@@ -20,10 +20,12 @@
 #include <algorithm>
 #include <fstream>
 #include <regex>
+#include <chrono>
 
 #include "standard.hpp"
 
 using namespace std;
+using namespace std::chrono;
 
 //======== GM ========================================================== 80 ====
 
@@ -89,6 +91,8 @@ int main(int args, char** argv) {
       return 1;
    }
 
+   steady_clock::time_point begin = steady_clock::now();
+
    auto* parse_map = new map<string, vector<string> *, less<string>>{}; 
    string line;  
    ifstream input (argv[1]);
@@ -97,19 +101,23 @@ int main(int args, char** argv) {
    }
 
    auto results = reduce(parse_map); 
-   cout << results;
+   // cout << results;
    
    ofstream output (string(argv[1]).append("-results"));
    for (auto& [key, value] : results) {
       output << "\"" << key << "\" " << value << endl;
    }
-   output.close();
-
 
    for (auto& [key, value] : *parse_map) {
       delete value;
    }
 
+   steady_clock::time_point end = steady_clock::now();
+   std::cout << duration_cast<nanoseconds>(end - begin).count()
+             << "[ms]" << std::endl;
+
+   output.close();
+   
    delete parse_map;
    return 0;
 }

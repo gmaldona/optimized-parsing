@@ -19,7 +19,11 @@
 
 //======== GM ========================================================== 80 ====
 
+#include <chrono>
+
 #include "optimized.hpp"
+
+using namespace std::chrono;
 
 //======== GM ========================================================== 80 ====
 
@@ -268,7 +272,14 @@ int main(int args, char **argv) {
                                 out->fd, 0);
    out->size = file->fileInfo.st_size;
    parser p;
+   steady_clock::time_point begin = steady_clock::now();
+
    p.accept(file, out);
+
+   steady_clock::time_point end = steady_clock::now();
+
+   std::cout << duration_cast<milliseconds>(end - begin).count()
+             << "[ms]" << std::endl;
 
    close(out->fd);
    munmap(out->content, file->fileInfo.st_size);
