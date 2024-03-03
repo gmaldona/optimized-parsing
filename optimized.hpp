@@ -51,13 +51,15 @@ class mapped_file {
 class String {
 
  private:
-  char *str;
+  char *str = new char[100];
   size_t length = 0;
 
  public:
   String(size_t bufsize, char *key, char *value) {
-     str = strcat(strcat(strcat(key, ","), value), "\n");
-     length = bufsize + 2;
+     str[0] = '"';
+
+     strcat(strcat(strcat(strcat(str, key), "\","), value), "\n");
+     length = bufsize + 4;
   }
 
   const char *c_str() {
@@ -66,6 +68,10 @@ class String {
 
   size_t size() const {
      return length;
+  }
+
+  ~String() {
+     delete[] str;
   }
 };
 
@@ -160,8 +166,10 @@ class parse_trie {
   struct node {
     int next = -1;
     bool stored = false;
-    char *key = new char[21];
-    char *value = new char[65];
+    char *key;
+    char *value;
+
+    ~node();
   };
 
   parse_trie();

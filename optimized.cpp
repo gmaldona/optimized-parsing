@@ -29,12 +29,18 @@ using namespace std::chrono;
 
 parse_trie::parse_trie() {
    // the value of a node can store a signed integer.
+
    trie = new node *[MAX_NODES];
 
    for (size_t i = 0; i < MAX_NODES; i++) {
       trie[i] = new node[parser::ACCEPTABLE];
       memset(trie[i], 0, parser::ACCEPTABLE);
    }
+}
+
+parse_trie::node::~node() {
+   delete[] key;
+   delete[] value;
 }
 
 void parse_trie::insert(char *key, char *value) {
@@ -66,8 +72,14 @@ void parse_trie::insert(char *key, char *value) {
    int v = StoI(value);
    if (n->value == nullptr || v > StoI(n->value)) {
       n->stored = true;
-      strcpy(n->key, key);
-      strcpy(n->value, value);
+
+      n->key = new char[21];
+      n->value = new char[65];
+      memset(n->key, 0, 100);
+      memset(n->value, 0, 100);
+
+      strncpy(n->key, key, strlen(key) + 1);
+      strncpy(n->value, value, strlen(value));
       // std::cout << "key=" << n->key << ",value=" << n->value << std::endl;
    }
 }
