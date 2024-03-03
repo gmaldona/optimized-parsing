@@ -36,33 +36,54 @@ parse_trie::parse_trie() {
 void parse_trie::insert(char *key, char *value) {
 
    int i = 0;
-   node *n;
-
-   int index = c2i(key[0]) + 1; // OFFSET OF 1
+   int index = c2i(key[0]); // OFFSET OF 1
    int next = index;
+   node *n = &trie[index + 1][index];
+   while (key[i] != '\0') {
 
-   for (n = &trie[index][index]; key[i] != '\0';
-        n = &trie[next][c2i(key[i]) + 1]) {
+      // std::cout << "[" << next << "]" << "[" << c2i(key[i])
+      //          << "(" << key[i] << ")] = " << NEXT << std::endl;
 
-//      std::cout << "[" << next << "]" << "[" << c2i(key[i]) << "(" << key[i] << ")] = " << NEXT << std::endl;
-
-      if (n->next < 1) {
-         n->next = NEXT;
-         next = NEXT++;
-      } else {
-//         std::cout << n->next << std::endl;
+      if (n->next > 0) {
          next = n->next;
+      } else if (n->next < 1 && key[i + 1] != '\0') {
+         n->next = NEXT;
+         next = NEXT;
+         NEXT++;
       }
 
       i++;
+      if (key[i] != '\0') {
+         n = &trie[next][c2i(key[i])];
+      }
    }
-
+   n = &trie[next][c2i(key[i - 1])];
+   // std::cout << "next=" << next << ", index=" << c2i(key[i - 1]) << std::endl;
    int v = StoI(value);
    if (n->value == nullptr || v > StoI(n->value)) {
       n->stored = true;
-      n->key = key;
-      n->value = value;
+      strcpy(n->key, key);
+      strcpy(n->value, value);
+      // std::cout << "key=" << n->key << ",value=" << n->value << std::endl;
    }
+}
+
+size_t parse_trie::traverse(const int index, mapped_file *out, size_t offset) {
+   for (size_t i = 0; i < parser::ACCEPTABLE; i++) {
+      node *n = &trie[index][i];
+      if (n->next > 0) {
+         traverse(n->next, out, offset);
+      }
+      if (n->stored) {
+         size_t length = strlen(n->key) + strlen(n->value);
+         String str(length, n->key, n->value);
+         memcpy(out->content + offset, str.c_str(), str.size());
+         offset += str.size();
+//         std::cout << str.c_str();
+      }
+   }
+
+   return offset;
 }
 
 parse_trie::~parse_trie() {
@@ -189,26 +210,14 @@ void parser::accept(mapped_file *file, mapped_file *out) {
       ++this->index;
    }
 
-   for (size_t i = 1; i < parser::ACCEPTABLE + 1; ++i) {
-      parse_trie::node *n = &trie.trie[i][i];
-      while (n->next > 0) { // includes -1 and 0
-
-         // offset of 31
-         std::cout << i << ": " << (char) (i + 31) << ", " << n->next << std::endl;
-
-         for (size_t alpha = 0; i < parser::ACCEPTABLE; ++i) {
-            if (n->stored) {
-               size_t length = strlen(n->key) + strlen(n->value) + 2;
-               String str(length, 4, n->key, ",", n->value, "\n");
-               memcpy(out->content + out->offset,
-                      str.c_str(), str.size());
-               out->offset += str.size();
-               std::cout << str.c_str() << std::endl;
-            }
-            n = &trie.trie[n->next][alpha];
-         }
-      }
+   size_t offset = 0;
+   for (int alpha = 0; alpha < parser::ACCEPTABLE; ++alpha) {
+      offset = offset + trie.traverse(alpha + 1,
+                                      out,
+                                      offset);
    }
+   std::cout << out->content << std::endl;
+   msync(out->content, out->size, MS_SYNC);
 }
 
 //======== GM ========================================================== 80 ====
@@ -245,9 +254,10 @@ int main(int args, char **argv) {
 
    out->fd = open(strcat(argv[1], "-results"),
                   O_RDWR | O_CREAT, (mode_t) 0600);
-   out->content = (char *) mmap(nullptr, file->fileInfo.st_size,
+   out->content = (char *) mmap(NULL, file->fileInfo.st_size,
                                 PROT_READ | PROT_WRITE, MAP_SHARED,
                                 out->fd, 0);
+   out->size = file->fileInfo.st_size;
    parser p;
    p.accept(file, out);
 

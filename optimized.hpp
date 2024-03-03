@@ -42,6 +42,7 @@ class mapped_file {
   int fd;
   struct stat fileInfo;
   char *content;
+  size_t size;
   long long offset = 0;
 
   ~mapped_file();
@@ -54,17 +55,9 @@ class String {
   size_t length = 0;
 
  public:
-  String(size_t bufsize, size_t args, ...) {
-     str = new char[bufsize];
-     int offset = 0;
-     va_list ap;
-     va_start(ap, args);
-     for (size_t i = 0; i < args; ++i) {
-        const char *c = va_arg(ap, char*);
-        size_t _length = strlen(c);
-        length += _length;
-        memcpy(str + offset, c, _length);
-     }
+  String(size_t bufsize, char *key, char *value) {
+     str = strcat(strcat(strcat(key, ","), value), "\n");
+//     std::cout << str;
   }
 
   const char *c_str() {
@@ -161,14 +154,14 @@ class parse_trie {
 
   const static int MAX_LEN = 20 + 1;
   const static int MAX_NODES = (10'000 + 1) * MAX_LEN;
-  int NEXT = parser::ACCEPTABLE;
+  int NEXT = parser::ACCEPTABLE + 1;
 
  public:
   struct node {
     int next = -1;
     bool stored = false;
-    char *key;
-    char *value;
+    char *key = new char[21];
+    char *value = new char[65];
   };
 
   parse_trie();
@@ -181,7 +174,9 @@ class parse_trie {
    * @param value: int
    */
   void insert(char *key, char *value);
-  
+
+  size_t traverse(const int index, mapped_file *out, size_t offset);
+
   ~parse_trie();
 };
 
