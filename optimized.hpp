@@ -22,10 +22,12 @@
 #include <sys/stat.h>
 #include <sys/mman.h>
 
+#include <fcntl.h>
+#include <unistd.h>
+
 #include <iostream>
 #include <cstdlib>
 #include <cstdio>
-#include <fcntl.h>
 #include <cstring>
 
 //======== GM ========================================================== 80 ====
@@ -36,11 +38,42 @@
  * Representation for a mmap()'d file.
  */
 class mapped_file {
-public:
-    struct stat fileInfo;
-    char *content;
+ public:
+  int fd;
+  struct stat fileInfo;
+  char *content;
+  long long offset = 0;
 
-    ~mapped_file();
+  ~mapped_file();
+};
+
+class String {
+
+ private:
+  char *str;
+  size_t length = 0;
+
+ public:
+  String(size_t bufsize, size_t args, ...) {
+     str = new char[bufsize];
+     int offset = 0;
+     va_list ap;
+     va_start(ap, args);
+     for (size_t i = 0; i < args; ++i) {
+        const char *c = va_arg(ap, char*);
+        size_t _length = strlen(c);
+        length += _length;
+        memcpy(str + offset, c, _length);
+     }
+  }
+
+  const char *c_str() {
+     return str;
+  }
+
+  size_t size() const {
+     return length;
+  }
 };
 
 //======== GM ========================================================== 80 ====
@@ -50,107 +83,106 @@ public:
  * see below.
  */
 class parser {
-    /**
-     * STATE MACHINE:
-     * This state machine captures a string wrapped within quotations and a value
-     * that consists of integers.
-     *
-     *      *[e]       *[ALPHA]       *[e]            *[0-9]
-     *     (S_0) --"--> (S_1) --"--> (S_3) --[0-9]--> (S_4) --$--> END
-     *                   |  ^\
-     *                  (\)   (\ | " | .)
-     *                   V     \
-     *                 (S_2) ---\
-     *
-     *  *[A] := State (S) does a transition [A] to state (S)
-    */
-    enum state {
-        REJECT,       //     (0)
-        START,        // S_0 (1)
-        STR,          // S_1 (2)
-        ESCAPED,      // S_2 (3)
-        END_STR,      // S_3 (4)
-        INT,          // S_4 (5)
-    };
+  /**
+   * STATE MACHINE:
+   * This state machine captures a string wrapped within quotations and a value
+   * that consists of integers.
+   *
+   *      *[e]       *[ALPHA]       *[e]            *[0-9]
+   *     (S_0) --"--> (S_1) --"--> (S_3) --[0-9]--> (S_4) --$--> END
+   *                   |  ^\
+   *                  (\)   (\ | " | .)
+   *                   V     \
+   *                 (S_2) ---\
+   *
+   *  *[A] := State (S) does a transition [A] to state (S)
+  */
+  enum state {
+    REJECT,       //     (0)
+    START,        // S_0 (1)
+    STR,          // S_1 (2)
+    ESCAPED,      // S_2 (3)
+    END_STR,      // S_3 (4)
+    INT,          // S_4 (5)
+  };
 
-    /**
-     * ASCII Bounds for Integers and Printable Characters.
-     */
-    enum ASCII {
-        MIN = 32,  // min printable character.
-        MAX = 126, // max printable character.
-        IMIN = 48,  // min printable integer.
-        IMAX = 57   // max printable integer.
-    };
+  /**
+   * ASCII Bounds for Integers and Printable Characters.
+   */
+  enum ASCII {
+    MIN = 32,  // min printable character.
+    MAX = 126, // max printable character.
+    IMIN = 48,  // min printable integer.
+    IMAX = 57   // max printable integer.
+  };
 
-public:
-    // total number of states.
-    static const size_t STATES = 6; // A Java reflection would be nice here hmm...
-    static const size_t ACCEPTABLE = ASCII::MAX - ASCII::MIN; // printable chars
-    static const size_t STRLEN = 20 + 1; // requirement: strlen is 20 + 1 byte \0
+ public:
+  // total number of states.
+  static const size_t STATES = 6; // A Java reflection would be nice here hmm...
+  static const size_t ACCEPTABLE = ASCII::MAX - ASCII::MIN; // printable chars
+  static const size_t STRLEN = 20 + 1; // requirement: strlen is 20 + 1 byte \0
 
-    parser();
+  parser();
 
-    void set_state(parser::state s) {
-        this->s = s;
-    }
+  void set_state(parser::state s) {
+     this->s = s;
+  }
 
-    parser::state cur_state() {
-        return this->s;
-    }
+  parser::state cur_state() {
+     return this->s;
+  }
 
-    /**
-     * parsed character by character within the mmap'd file and uses a state
-     * machine to parse and trie for storing parsed characters.
-     * Prints the trie in the required format at the end of the function.
-     * @param file a mmap'd file
-     */
-    void accept(mapped_file *file);
+  /**
+   * parsed character by character within the mmap'd file and uses a state
+   * machine to parse and trie for storing parsed characters.
+   * Prints the trie in the required format at the end of the function.
+   * @param file a mmap'd file
+   */
+  void accept(mapped_file *file, mapped_file *out);
 
-private:
-    parser::state s = parser::state::START;
-    parser::state transition_table[STATES][ACCEPTABLE];
+ private:
+  parser::state s = parser::state::START;
+  parser::state transition_table[STATES][ACCEPTABLE];
 
-    size_t line = 1;
+  size_t line = 1;
 
-    char prev_char = '^';
-    int prev_state = 1;
-    int index = 0;
+  char prev_char = '^';
+  int prev_state = 1;
+  int index = 0;
 };
 
 //======== GM ========================================================== 80 ====
 
 class parse_trie {
 
-private:
-    // considering the first index [0] to be a dead node.
-    // if [0] then nothing found.
+ private:
+  // considering the first index [0] to be a dead node.
+  // if [0] then nothing found.
 
-    const static int MAX_LEN = 20 + 1;
-    const static int MAX_NODES = (10'000 + 1) * MAX_LEN;
-    int NEXT = parser::ACCEPTABLE;
+  const static int MAX_LEN = 20 + 1;
+  const static int MAX_NODES = (10'000 + 1) * MAX_LEN;
+  int NEXT = parser::ACCEPTABLE;
 
+ public:
+  struct node {
+    int next = -1;
+    bool stored = false;
+    char *key;
+    char *value;
+  };
 
-public:
-    struct node {
-        int next = -1;
-        bool stored = false;
-        char *key;
-        int value = INT64_MIN;
-    };
+  parse_trie();
 
-    parse_trie();
+  node **trie;
 
-    node **trie;
-
-    /**
-     * Inserts a key and value into the parse_trie
-     * @param key: str
-     * @param value: int
-     */
-    void insert(char *key, char *value);
-
-    ~parse_trie();
+  /**
+   * Inserts a key and value into the parse_trie
+   * @param key: str
+   * @param value: int
+   */
+  void insert(char *key, char *value);
+  
+  ~parse_trie();
 };
 
 //======== GM ========================================================== 80 ====
@@ -177,12 +209,12 @@ mapped_file *map_file2mem(const char *path);
  * @returns int 
  */
 inline int StoI(const char *p) {
-    int x = 0;
-    while (*p >= '0' && *p <= '9') {
-        x = (x * 10) + (*p - '0');
-        ++p;
-    }
-    return x;
+   int x = 0;
+   while (*p >= '0' && *p <= '9') {
+      x = (x * 10) + (*p - '0');
+      ++p;
+   }
+   return x;
 }
 
 /**
@@ -191,5 +223,5 @@ inline int StoI(const char *p) {
  * for the parser.
  */
 inline size_t c2i(char c) {
-    return (size_t) c - ' ';
+   return (size_t) c - ' ';
 }

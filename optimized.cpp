@@ -24,207 +24,235 @@
 //======== GM ========================================================== 80 ====
 
 parse_trie::parse_trie() {
-    // the value of a node can store a signed integer.
-    trie = new node *[MAX_NODES];
+   // the value of a node can store a signed integer.
+   trie = new node *[MAX_NODES];
 
-    for (size_t i = 0; i < MAX_NODES; i++) {
-        trie[i] = new node[parser::ACCEPTABLE];
-        memset(trie[i], 0, parser::ACCEPTABLE);
-    }
+   for (size_t i = 0; i < MAX_NODES; i++) {
+      trie[i] = new node[parser::ACCEPTABLE];
+      memset(trie[i], 0, parser::ACCEPTABLE);
+   }
 }
 
 void parse_trie::insert(char *key, char *value) {
-    int next = 0;
-    int i;
-    node *n = &trie[key[0]][c2i(key[0])];
-    for (i = 1; key[i] != '\0'; i++) {
-        if (n->next == -1) {
-            n->next = NEXT;
-            next = NEXT++;
-        } else {
-            next = n->next;
-        }
-        n = &trie[next][c2i(key[i])];
-    }
 
-    int v = StoI(value);
-    if (v > n->value) {
-        n->stored = true;
-        n->key = key;
-        n->value = v;
-    }
+   int i = 0;
+   node *n;
+
+   int index = c2i(key[0]) + 1; // OFFSET OF 1
+   int next = index;
+
+   for (n = &trie[index][index]; key[i] != '\0';
+        n = &trie[next][c2i(key[i]) + 1]) {
+
+//      std::cout << "[" << next << "]" << "[" << c2i(key[i]) << "(" << key[i] << ")] = " << NEXT << std::endl;
+
+      if (n->next < 1) {
+         n->next = NEXT;
+         next = NEXT++;
+      } else {
+//         std::cout << n->next << std::endl;
+         next = n->next;
+      }
+
+      i++;
+   }
+
+   int v = StoI(value);
+   if (n->value == nullptr || v > StoI(n->value)) {
+      n->stored = true;
+      n->key = key;
+      n->value = value;
+   }
 }
 
 parse_trie::~parse_trie() {
-    for (size_t i = 0; i < MAX_NODES; i++) {
-        delete[] trie[i];
-    }
-    delete[] trie;
+   for (size_t i = 0; i < MAX_NODES; i++) {
+      delete[] trie[i];
+   }
+   delete[] trie;
 }
 
 //======== GM ========================================================== 80 ====
 
 parser::parser() {
-    for (size_t i = 0; i < STATES; i++) {
-        memset(transition_table[i], parser::state::REJECT, ACCEPTABLE);
+   for (size_t i = 0; i < STATES; i++) {
+      memset(transition_table[i], parser::state::REJECT, ACCEPTABLE);
 
-        if (i == parser::state::STR) {
-            for (char c = parser::ASCII::MIN; c <= parser::ASCII::MAX; ++c) {
-                transition_table[parser::state::STR][c2i(c)] = parser::state::STR;
-            }
-        } else if (i == parser::state::END_STR || i == parser::state::INT) {
-            for (char c = parser::ASCII::IMIN; c <= parser::ASCII::IMAX; ++c) {
-                transition_table[i][c2i(c)] = parser::state::INT;
-            }
-        }
-    }
+      if (i == parser::state::STR) {
+         for (char c = parser::ASCII::MIN; c <= parser::ASCII::MAX; ++c) {
+            transition_table[parser::state::STR][c2i(c)] = parser::state::STR;
+         }
+      } else if (i == parser::state::END_STR || i == parser::state::INT) {
+         for (char c = parser::ASCII::IMIN; c <= parser::ASCII::IMAX; ++c) {
+            transition_table[i][c2i(c)] = parser::state::INT;
+         }
+      }
+   }
 
-    transition_table[parser::state::START][c2i(' ')] = parser::state::START;
-    transition_table[parser::state::START][c2i('\n')] = parser::state::START;
-    transition_table[parser::state::START][c2i('"')] = parser::state::STR;
+   transition_table[state::START][c2i(' ')] = parser::state::START;
+   transition_table[state::START][c2i('\n')] = parser::state::START;
+   transition_table[state::START][c2i('"')] = parser::state::STR;
 
-    transition_table[parser::state::STR][c2i('\\')] = parser::state::ESCAPED;
+   transition_table[state::STR][c2i('\\')] = parser::state::ESCAPED;
 
-    transition_table[parser::state::ESCAPED][c2i('\\')] = parser::state::STR;
-    transition_table[parser::state::ESCAPED][c2i('"')] = parser::state::STR;
-    transition_table[parser::state::ESCAPED][c2i('.')] = parser::state::STR;
+   transition_table[state::ESCAPED][c2i('\\')] = parser::state::STR;
+   transition_table[state::ESCAPED][c2i('"')] = parser::state::STR;
+   transition_table[state::ESCAPED][c2i('.')] = parser::state::STR;
 
-    transition_table[parser::state::STR][c2i('"')] = parser::state::END_STR;
+   transition_table[state::STR][c2i('"')] = parser::state::END_STR;
 
-    transition_table[parser::state::END_STR][c2i(' ')] = parser::state::END_STR;
+   transition_table[state::END_STR][c2i(' ')] = parser::state::END_STR;
 }
 
-void parser::accept(mapped_file *file) {
+void parser::accept(mapped_file *file, mapped_file *out) {
 
-    parse_trie trie;
-    char *chars = file->content;
-    char key_str[parser::STRLEN];
-    char value_str[parser::STRLEN];
-    memset(key_str, 0, parser::STRLEN);
-    memset(value_str, 0, parser::STRLEN);
-    size_t char_p = 0;
-    size_t val_p = 0;
+   parse_trie trie;
+   char *chars = file->content;
+   char key_str[parser::STRLEN];
+   char value_str[parser::STRLEN];
+   memset(key_str, 0, parser::STRLEN);
+   memset(value_str, 0, parser::STRLEN);
+   size_t char_p = 0;
+   size_t val_p = 0;
 
-    for (off_t i = 0; i <= file->fileInfo.st_size; ++i) {
-        char c = chars[i];
-        this->prev_state = this->cur_state();
-        switch (this->cur_state()) {
-            case parser::state::START:
-                this->set_state(transition_table[parser::state::START][c2i(c)]);
-                break;
-            case parser::state::STR:
-                if (c != '\"' || this->prev_state == parser::state::ESCAPED) {
-                    key_str[char_p] = c;
-                    char_p++;
-                }
-                this->set_state(transition_table[parser::state::STR][c2i(c)]);
-                break;
-            case parser::state::ESCAPED:
-                key_str[char_p] = c;
-                char_p++;
-                this->set_state(transition_table[parser::state::ESCAPED][c2i(c)]);
-                break;
-            case parser::state::END_STR:
-                key_str[char_p] = '\0';
-                if (49 <= c && c <= 57) { // isa_int
-                    value_str[val_p] = c;
-                    val_p++;
-                }
-                this->set_state(transition_table[parser::state::END_STR][c2i(c)]);
-                break;
-            case parser::state::INT:
-                // c2i(x) => x - 32. NL is 0x10, 0x10 - 32 == ???
-                if (c == '\n' || c == ' ' || c == '\t') {
-                    value_str[val_p] = '\0';
-                    trie.insert(key_str, value_str);
+   for (off_t i = 0; i <= file->fileInfo.st_size; ++i) {
+      char c = chars[i];
+      this->prev_state = this->cur_state();
+      switch (this->cur_state()) {
+         case parser::state::START:
+            this->set_state(transition_table[parser::state::START][c2i(c)]);
+            break;
+         case parser::state::STR:
+            if (c != '\"' || this->prev_state == parser::state::ESCAPED) {
+               key_str[char_p] = c;
+               char_p++;
+            }
+            this->set_state(transition_table[parser::state::STR][c2i(c)]);
+            break;
+         case parser::state::ESCAPED:
+            key_str[char_p] = c;
+            char_p++;
+            this->set_state(transition_table[parser::state::ESCAPED][c2i(c)]);
+            break;
+         case parser::state::END_STR:
+            key_str[char_p] = '\0';
+            if (49 <= c && c <= 57) { // isa_int
+               value_str[val_p] = c;
+               val_p++;
+            }
+            this->set_state(transition_table[parser::state::END_STR][c2i(c)]);
+            break;
+         case parser::state::INT:
+            // c2i(x) => x - 32. NL is 0x10, 0x10 - 32 == ???
+            if (c == '\n' || c == ' ' || c == '\t') {
+               value_str[val_p] = '\0';
 
-                    this->set_state(parser::state::START);
-                    ++this->line;
-                    this->index = 0;
+               trie.insert(key_str, value_str);
 
-                    std::cout << key_str << ',' << value_str << std::endl;
-                    char_p = 0;
-                    val_p = 0;
+               this->set_state(parser::state::START);
+               ++this->line;
+               this->index = 0;
 
-                    memset(key_str, 0, sizeof(key_str));
-                    memset(value_str, 0, sizeof(value_str));
+               // std::cout << key_str << ',' << value_str << std::endl;
+               char_p = 0;
+               val_p = 0;
 
-                } else {
-                    value_str[val_p] = c;
-                    val_p++;
-                    this->set_state(transition_table[parser::state::INT][c2i(c)]);
-                }
-                break;
-            case parser::state::REJECT:
-                printf("Failed to parse. Parse Exception on line %zu.\n", this->line);
-                printf("prev_char='%c', failed on '%c' in state: %d at index=%d.\n",
-                       this->prev_char,
-                       c,
-                       this->prev_state,
-                       this->index);
-                exit(1);
+               memset(key_str, 0, sizeof(key_str));
+               memset(value_str, 0, sizeof(value_str));
 
-            default:
-                this->set_state(parser::state::REJECT);
-        }
+            } else {
+               value_str[val_p] = c;
+               val_p++;
+               this->set_state(transition_table[parser::state::INT][c2i(c)]);
+            }
+            break;
+         case parser::state::REJECT:
+            printf("Failed to parse. Parse Exception on line %zu.\n",
+                   this->line);
+            printf("prev_char='%c', failed on '%c' in state: %d at index=%d.\n",
+                   this->prev_char,
+                   c,
+                   this->prev_state,
+                   this->index);
+            exit(1);
 
-        if (this->cur_state() == parser::state::START) {
-            this->prev_char = '^';
-            index = 0;
-        } else {
-            this->prev_char = c;
-        }
-        ++this->index;
-    }
+         default:
+            this->set_state(parser::state::REJECT);
+      }
 
-//    for (size_t i = 0; i < parser::ACCEPTABLE; ++i) {
-//        parse_trie::node *n = &trie.trie[i][i];
-//        while (n->next != -1) {
-//            for (size_t alpha = 0; i < parser::ACCEPTABLE; ++i) {
-//                if (n->stored) {
-//
-//                }
-//                n = &trie.trie[n->next][alpha];
-//            }
-//        }
-//    }
+      if (this->cur_state() == parser::state::START) {
+         this->prev_char = '^';
+         index = 0;
+      } else {
+         this->prev_char = c;
+      }
+      ++this->index;
+   }
+
+   for (size_t i = 1; i < parser::ACCEPTABLE + 1; ++i) {
+      parse_trie::node *n = &trie.trie[i][i];
+      while (n->next > 0) { // includes -1 and 0
+
+         // offset of 31
+         std::cout << i << ": " << (char) (i + 31) << ", " << n->next << std::endl;
+
+         for (size_t alpha = 0; i < parser::ACCEPTABLE; ++i) {
+            if (n->stored) {
+               size_t length = strlen(n->key) + strlen(n->value) + 2;
+               String str(length, 4, n->key, ",", n->value, "\n");
+               memcpy(out->content + out->offset,
+                      str.c_str(), str.size());
+               out->offset += str.size();
+               std::cout << str.c_str() << std::endl;
+            }
+            n = &trie.trie[n->next][alpha];
+         }
+      }
+   }
 }
 
 //======== GM ========================================================== 80 ====
 
 mapped_file::~mapped_file() {
-    delete this->content;
+   delete this->content;
 }
 
 mapped_file *map_file2mem(const char *path) {
-    auto *file = new mapped_file();
+   auto *file = new mapped_file();
 
-    // try to open the file and if fail return nullptr for main to handle
-    int fd;
-    if ((fd = open(path, O_RDONLY)) == -1 ||
-        stat(path, &file->fileInfo) == -1) {
-        return nullptr;
-    }
-    file->content = (char *) mmap(0, file->fileInfo.st_size, PROT_READ,
-                                  MAP_SHARED, fd, 0);
-    if (file->content == MAP_FAILED) {
-        return nullptr;
-    }
-    return file;
+   // try to open the file and if fail return nullptr for main to handle
+   int fd;
+   if ((fd = open(path, O_RDONLY)) == -1 ||
+      stat(path, &file->fileInfo) == -1) {
+      return nullptr;
+   }
+   file->content = (char *) mmap(0, file->fileInfo.st_size, PROT_READ,
+                                 MAP_SHARED, fd, 0);
+   if (file->content == MAP_FAILED) {
+      return nullptr;
+   }
+   return file;
 }
 
 int main(int args, char **argv) {
+   if (args == 1) {
+      printf("No file input.\n");
+      return 1;
+   }
 
-    if (args == 1) {
-        printf("No file input.\n");
-        return 1;
-    }
+   auto file = map_file2mem(argv[1]);
+   auto out = new mapped_file();
 
-    auto file = map_file2mem(argv[1]);
+   out->fd = open(strcat(argv[1], "-results"),
+                  O_RDWR | O_CREAT, (mode_t) 0600);
+   out->content = (char *) mmap(nullptr, file->fileInfo.st_size,
+                                PROT_READ | PROT_WRITE, MAP_SHARED,
+                                out->fd, 0);
+   parser p;
+   p.accept(file, out);
 
-    parser p;
-    p.accept(file);
-
+   close(out->fd);
+   munmap(out->content, file->fileInfo.st_size);
 }
 
 //======== GM ========================================================== 80 ====
