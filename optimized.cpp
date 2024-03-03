@@ -178,7 +178,7 @@ void parser::accept(mapped_file *file, mapped_file *out) {
             break;
          case parser::state::END_STR:
             key_str[char_p] = '\0';
-            if (49 <= c && c <= 57) { // isa_int
+            if (48 <= c && c <= 57) { // isa_int
                value_str[val_p] = c;
                val_p++;
             }

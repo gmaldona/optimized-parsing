@@ -29,63 +29,69 @@ using namespace std::chrono;
 
 //======== GM ========================================================== 80 ====
 
-std::ostream& operator<<(std::ostream& oss, 
-                         std::map<std::string, std::string, 
+std::ostream &operator<<(std::ostream &oss,
+                         std::map<std::string, std::string,
                                   std::less<std::string>> map) {
-   for (auto& [key, value] : map) {
+   for (auto &[key, value] : map) {
       oss << "\"" << key << "\" " << value << endl;
    }
    return oss;
 }
 
-void parse(const std::string& line, 
-           std::map<std::string, std::vector<std::string>*, 
-           std::less<std::string> >* parse_map) {
-   const size_t  start = line.find("\""); 
-   const size_t  end   = line.rfind("\"") - 1; 
-   const string  key   = line.substr(start + 1, end - start); 
-   const string substr = line.substr(end+1);
+void parse(const std::string &line,
+           std::map<std::string, std::vector<std::string> *,
+                    std::less<std::string> > *parse_map) {
+   const size_t start = line.find('\"');
+   const size_t end = line.rfind('\"') - 1;
+   const string key = line.substr(start + 1, end - start);
+   const string substr = line.substr(end + 1);
 
    // TODO: Error catching for incorrect parses. 
 
-   regex  intexpr("[0-9]+"); 
+   regex intexpr("[0-9]+");
    smatch match;
 
-   string value; 
-   if (regex_search(substr, match, intexpr) ) {
-      const string value = match.str(0); 
+   string value;
+   if (regex_search(substr, match, intexpr)) {
+      const string value = match.str(0);
 
       if (parse_map->find(key) != parse_map->end()) {
-         (*parse_map)[key]->push_back(value); 
+         (*parse_map)[key]->push_back(value);
       } else {
-         (*parse_map)[key] = new vector<string>{ value }; 
+         (*parse_map)[key] = new vector<string>{value};
       }
    }
 }
 
 std::map<std::string, std::string>
-reduce(std::map<std::string, std::vector<std::string>*, 
-       std::less<std::string>>* parse_map) {
-   std::map<std::string, std::string> results {}; 
+reduce(std::map<std::string, std::vector<std::string> *,
+                std::less<std::string>> *parse_map) {
+   std::map<std::string, std::string> results{};
 
-   for (auto& [key, vec] : *parse_map) {
-      vector<int> mapped {};
-      for (auto& strval : *vec) {
-         const int value = atoi(strval.c_str());
-         mapped.push_back(value);
+   for (auto &[key, vec] : *parse_map) {
+      vector<string> mapped{};
+      for (auto &strval : *vec) {
+         mapped.push_back(strval);
       }
 
-      results.insert({
-          key, 
-          to_string(*max_element(mapped.begin(), mapped.end())) 
-      });
+      string max_str;
+      int max = 0;
+      for (auto &v : mapped) {
+         const int value = atoi(v.c_str());
+         if (value > max) {
+            max_str = v;
+            max = value;
+         }
+      }
+
+      results.insert({key, max_str});
    }
 
-   return results; 
+   return results;
 }
 
-int main(int args, char** argv) {
-   
+int main(int args, char **argv) {
+
    if (args == 1) {
       cout << "No file input." << endl;
       return 1;
@@ -93,22 +99,22 @@ int main(int args, char** argv) {
 
    steady_clock::time_point begin = steady_clock::now();
 
-   auto* parse_map = new map<string, vector<string> *, less<string>>{}; 
-   string line;  
-   ifstream input (argv[1]);
+   auto *parse_map = new map<string, vector<string> *, less<string>>{};
+   string line;
+   ifstream input(argv[1]);
    while (getline(input, line)) {
-      parse(line, parse_map); 
+      parse(line, parse_map);
    }
 
-   auto results = reduce(parse_map); 
+   auto results = reduce(parse_map);
    // cout << results;
-   
-   ofstream output (string(argv[1]).append("-results"));
-   for (auto& [key, value] : results) {
-      output << "\"" << key << "\" " << value << endl;
+
+   ofstream output(string(argv[1]).append("-results"));
+   for (auto &[key, value] : results) {
+      output << "\"" << key << "\"," << value << endl;
    }
 
-   for (auto& [key, value] : *parse_map) {
+   for (auto &[key, value] : *parse_map) {
       delete value;
    }
 
@@ -117,7 +123,7 @@ int main(int args, char** argv) {
              << "[ms]" << std::endl;
 
    output.close();
-   
+
    delete parse_map;
    return 0;
 }

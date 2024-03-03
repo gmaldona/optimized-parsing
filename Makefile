@@ -20,6 +20,10 @@ all: optimized # standard
 
 default: optimized
 
+.PHONY: generate
+generate: generate
+	$(CC) $(CFLAGS) -o build/generate generate.cpp
+
 .PHONY: optimized
 optimized: optimized.o
 	$(CC) $(CFLAGS) -o build/optimized optimized.cpp
