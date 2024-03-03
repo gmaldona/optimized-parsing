@@ -68,22 +68,27 @@ void parse_trie::insert(char *key, char *value) {
    }
 }
 
-size_t parse_trie::traverse(const int index, mapped_file *out, size_t offset) {
+void parse_trie::traverse(const int index, mapped_file *out, size_t *offset) {
    for (size_t i = 0; i < parser::ACCEPTABLE; i++) {
       node *n = &trie[index][i];
       if (n->next > 0) {
          traverse(n->next, out, offset);
       }
+
       if (n->stored) {
          size_t length = strlen(n->key) + strlen(n->value);
+
          String str(length, n->key, n->value);
-         memcpy(out->content + offset, str.c_str(), str.size());
-         offset += str.size();
-//         std::cout << str.c_str();
+         if (ftruncate(out->fd, *offset + str.size()) == -1) {
+            printf("Unable to expand output file size.");
+            exit(1);
+         }
+         memcpy(out->content + *offset, str.c_str(), str.size());
+         // std::cout << "offset: " << *offset << std::endl;
+         // std::cout << str.c_str();
+         *offset = *offset + str.size();
       }
    }
-
-   return offset;
 }
 
 parse_trie::~parse_trie() {
@@ -212,12 +217,9 @@ void parser::accept(mapped_file *file, mapped_file *out) {
 
    size_t offset = 0;
    for (int alpha = 0; alpha < parser::ACCEPTABLE; ++alpha) {
-      offset = offset + trie.traverse(alpha + 1,
-                                      out,
-                                      offset);
+      trie.traverse(alpha + 1, out, &offset);
    }
-   std::cout << out->content << std::endl;
-   msync(out->content, out->size, MS_SYNC);
+   msync(out->content, offset, MS_SYNC);
 }
 
 //======== GM ========================================================== 80 ====
@@ -254,6 +256,13 @@ int main(int args, char **argv) {
 
    out->fd = open(strcat(argv[1], "-results"),
                   O_RDWR | O_CREAT, (mode_t) 0600);
+
+   if (fstat(out->fd, &out->fileInfo) == -1) {
+      std::cerr << "Error getting file size" << std::endl;
+      close(out->fd);
+      return 1;
+   }
+
    out->content = (char *) mmap(NULL, file->fileInfo.st_size,
                                 PROT_READ | PROT_WRITE, MAP_SHARED,
                                 out->fd, 0);

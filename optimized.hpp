@@ -57,7 +57,7 @@ class String {
  public:
   String(size_t bufsize, char *key, char *value) {
      str = strcat(strcat(strcat(key, ","), value), "\n");
-//     std::cout << str;
+     length = bufsize + 2;
   }
 
   const char *c_str() {
@@ -175,7 +175,7 @@ class parse_trie {
    */
   void insert(char *key, char *value);
 
-  size_t traverse(const int index, mapped_file *out, size_t offset);
+  void traverse(const int index, mapped_file *out, size_t *offset);
 
   ~parse_trie();
 };
