@@ -27,6 +27,8 @@
 using namespace std;
 using namespace std::chrono;
 
+static int linenum = 0;
+
 //======== GM ========================================================== 80 ====
 
 std::ostream &operator<<(std::ostream &oss,
@@ -46,7 +48,21 @@ void parse(const std::string &line,
    const string key = line.substr(start + 1, end - start);
    const string substr = line.substr(end + 1);
 
-   // TODO: Error catching for incorrect parses. 
+   regex escaped(R"((\\)?(\"|\.|\\)?)");
+   smatch escapeMatch;
+   if (regex_search(key, escapeMatch, escaped)) {
+      const string escape = escapeMatch[1].str();
+      const string c = escapeMatch[2].str();
+
+      // cout << "escape: " << escape << endl;
+      // cout << "c: " << c << endl;
+
+      if (escape.empty() || c.empty()) {
+         cout << "Escape character error on line " << linenum << ". ";
+         cout << "Found " << escape << c << " ." << endl;
+         exit(1);
+      }
+   }
 
    regex intexpr("[0-9]+");
    smatch match;
