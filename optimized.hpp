@@ -118,7 +118,7 @@ class parser {
  public:
   // total number of states.
   static const size_t STATES = 6; // A Java reflection would be nice here hmm...
-  static const size_t ACCEPTABLE = ASCII::MAX - ASCII::MIN; // printable chars
+  static const size_t ACCEPTABLE = ASCII::MAX - ASCII::MIN + 1; // printable chars
   static const size_t STRLEN = 20 + 1; // requirement: strlen is 20 + 1 byte \0
 
   parser();
