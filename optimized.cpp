@@ -84,7 +84,7 @@ void parse_trie::insert(char *key, char *value) {
    }
 }
 
-void parse_trie::traverse(const int index, mapped_file *out, size_t *offset) {
+void parse_trie::traverse(const size_t index, mapped_file *out, size_t *offset) {
    for (size_t i = 0; i < parser::ACCEPTABLE; i++) {
       node *n = &trie[index][i];
       if (n->next > 0) {
@@ -232,7 +232,7 @@ void parser::accept(mapped_file *file, mapped_file *out) {
    }
 
    size_t offset = 0;
-   for (int alpha = 0; alpha < parser::ACCEPTABLE; ++alpha) {
+   for (size_t alpha = 0; alpha < parser::ACCEPTABLE; ++alpha) {
       trie.traverse(alpha + 1, out, &offset);
    }
    msync(out->content, offset, MS_SYNC);

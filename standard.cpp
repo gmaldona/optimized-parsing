@@ -57,7 +57,7 @@ void parse(const std::string &line,
       // cout << "escape: " << escape << endl;
       // cout << "c: " << c << endl;
 
-      if (escape.empty() || c.empty()) {
+      if (escape.empty() ^ c.empty()) {
          cout << "Escape character error on line " << linenum << ". ";
          cout << "Found " << escape << c << " ." << endl;
          exit(1);
@@ -118,12 +118,18 @@ int main(int args, char **argv) {
    auto *parse_map = new map<string, vector<string> *, less<string>>{};
    string line;
    ifstream input(argv[1]);
+
+   if (input.bad()) {
+      cout << "File read error." << endl;
+      return 1;
+   }
+
    while (getline(input, line)) {
       parse(line, parse_map);
    }
 
    auto results = reduce(parse_map);
-   // cout << results;
+//   cout << results;
 
    ofstream output(string(argv[1]).append("-results"));
    for (auto &[key, value] : results) {
@@ -135,7 +141,7 @@ int main(int args, char **argv) {
    }
 
    steady_clock::time_point end = steady_clock::now();
-   std::cout << duration_cast<nanoseconds>(end - begin).count()
+   std::cout << duration_cast<milliseconds>(end - begin).count()
              << "[ms]" << std::endl;
 
    output.close();

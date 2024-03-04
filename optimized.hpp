@@ -183,7 +183,7 @@ class parse_trie {
    */
   void insert(char *key, char *value);
 
-  void traverse(const int index, mapped_file *out, size_t *offset);
+  void traverse(const size_t index, mapped_file *out, size_t *offset);
 
   ~parse_trie();
 };

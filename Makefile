@@ -16,7 +16,7 @@ TARGET = 1brc
 
 # 		Using Clion to run a debugger. Only target one at a time.
 # 			   v
-all: optimized # standard
+all: optimized standard
 
 default: optimized
 
