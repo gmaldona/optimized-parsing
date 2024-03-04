@@ -26,7 +26,7 @@ _Note: 3 runs per test file and approximated the execution speed._
 | <center>1_000_000</center>  | <center>29 MB</center>    | <center>3_181 ms</center>  | <center>1_152 ms</center> |
 | <center>10_000_000</center> | <center>289.7 MB</center> | <center>32_130 ms</center> | <center>6_793 ms</center> |
 
-<img width="75%" src="./figures/results.png" alt="Parsing Times for a Regex Implementation vs. Table Driven Trie Implementation."/>
+<img width="85%" src="./figures/results.png" alt="Parsing Times for a Regex Implementation vs. Table Driven Trie Implementation."/>
 
 ## Submission
 
