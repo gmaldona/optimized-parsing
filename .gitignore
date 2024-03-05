@@ -4,5 +4,8 @@
 build/
 .idea/
 .vscode/
+cmake-build-debug/
+
+CMakeLists.txt
 
 a.out

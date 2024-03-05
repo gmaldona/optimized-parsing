@@ -34,7 +34,10 @@ parse_trie::parse_trie() {
 
    for (size_t i = 0; i < MAX_NODES; i++) {
       trie[i] = new node[parser::ACCEPTABLE];
-      memset(trie[i], 0, parser::ACCEPTABLE);
+      for (size_t j = 0; j < parser::ACCEPTABLE; j++) {
+          trie[i][j] = {};
+      }
+//      memset(trie[i], 0, parser::ACCEPTABLE);
    }
 }
 
@@ -75,10 +78,10 @@ void parse_trie::insert(char *key, char *value) {
 
       n->key = new char[21];
       n->value = new char[65];
-      memset(n->key, 0, 100);
-      memset(n->value, 0, 100);
+      memset(n->key, 0, 21);
+      memset(n->value, 0, 65);
 
-      strncpy(n->key, key, strlen(key) + 1);
+      strncpy(n->key, key, strlen(key));
       strncpy(n->value, value, strlen(value));
       // std::cout << "key=" << n->key << ",value=" << n->value << std::endl;
    }
@@ -118,7 +121,7 @@ parse_trie::~parse_trie() {
 
 parser::parser() {
    for (size_t i = 0; i < STATES; i++) {
-      memset(transition_table[i], parser::state::REJECT, ACCEPTABLE);
+      memset(transition_table[i], parser::state::REJECT, sizeof(transition_table[i]));
 
       if (i == parser::state::STR) {
          for (char c = parser::ASCII::MIN; c <= parser::ASCII::MAX; ++c) {
