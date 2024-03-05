@@ -56,9 +56,9 @@ class String {
 
  public:
   String(size_t bufsize, char *key, char *value) {
-     str[0] = '"';
+     str[0] = '"'; str[1] = '\0';
 
-     strcat(strcat(strcat(strcat(str, key), "\","), value), "\n");
+     strcat(strcat(strcat(strcat(str, key), "\","), value), "\n\0");
      length = bufsize + 4;
   }
 
